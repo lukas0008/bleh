@@ -48,22 +48,17 @@ pub fn load_config(_args: &crate::Args, config: Option<String>) -> Config {
         .iter()
         .flat_map(|v| parse_deps(v))
         .collect::<Vec<_>>();
-    let includes = bleh_node
+    let includes = cfg_doc
+        .nodes()
         .iter()
-        .flat_map(|v| {
-            v.children()
-                .unwrap()
-                .nodes()
-                .iter()
-                .filter(|v| v.name().value() == "include")
-                .map(|v| v.entries().first().unwrap().value().as_string().unwrap())
-        })
+        .filter(|v| v.name().value() == "include")
+        .map(|v| v.entries().first().unwrap().value().as_string().unwrap())
         .collect::<Vec<_>>();
     let mut config = Config { deps };
     for include in includes {
-        println!("Including {}", include);
+        // println!("Including {}", include);
         if include.ends_with(".kdl") {
-            let other_str = String::from_utf8(std::fs::read(&include).unwrap()).unwrap();
+            let other_str = String::from_utf8(std::fs::read(include).unwrap()).unwrap();
             let other = load_config(_args, Some(other_str));
             config.merge(other);
         }
