@@ -1,27 +1,45 @@
-use clap::Parser;
+use clap::{Arg, ArgAction, Command, Parser};
 mod init;
 mod sync;
 mod config;
 
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[arg(short, long)]
-    init: bool,
-    #[arg(short, long)]
-    sync: bool,
-}
-
 fn main() {
-    let args = Args::parse();
-    if args.init && args.sync {
-        eprintln!("Cannot use --init and --sync together");
-        std::process::exit(1);
-    }
-    if args.init {
-        return init::init();
-    }
-    if args.sync {
-        sync::sync(args);
+    let cmd = Command::new("bleh")
+        .subcommand_required(true)
+        .arg_required_else_help(true)
+        .subcommand(
+            Command::new("init")
+                .short_flag('I')
+                .long_flag("init")
+        )
+        .subcommand(
+            Command::new("sync")
+                .short_flag('S')
+                .long_flag("sync")
+                .arg(
+                    Arg::new("package")
+                        .help("packages")
+                        .action(ArgAction::Set)
+                        .num_args(1..)
+                )
+        )
+        .get_matches();
+
+    match cmd.subcommand() {
+        Some(("init", init_matches)) => {
+            init::init();
+        }
+
+        Some(("sync", sync_matches)) => {
+            let packages = sync_matches
+                .get_many::<String>("package")
+                .expect("is present")
+                .map(|s| s.as_str())
+                .collect();
+
+            sync::sync(&packages);
+        }
+
+        _ => unreachable!()
     }
 }
